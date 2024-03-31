@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Website</title>
+    <style>
+        /* Add your CSS styles here */
+        .border {
+            border: 1px solid black;
+        }
+        .nae {
+           background-color: bisque;
+        }
+        /* Add more styles as needed */
+    </style>
+</head>
+<body>
+
+<div id="container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+    <select id="time" style="width: 220px; height: 35px;" class="border">
+    
+        <!-- Add your time options here -->
+    </select>
+    <br><br>
+    <select id="elementName" style="width: 150px; height: 35px;" class="border">
+   
+    </select>
+    <br><br>
+    <select id="locationName" style="width: 150px; height: 35px;" class="border">
+       
+    </select>
+    <br><br>
+    <div id="result" style="width: 339px; height: 368px; text-align: center;" class="border">
+        結果
+    </div>
+    <br><br>
+    <button id="search" style="width: 243px; height: 80px; font-size: 20px; background-color:rgb(150, 172, 147) ;" class="border">
+        搜尋
+    </button>
+    <br><br>
+ 
+</div>
+
+
+<script>
+// 定義 fillSelectOptions 函數，填充下拉選單的選項
+function fillSelectOptions(selectId, options) {
+    const selectElement = document.getElementById(selectId);
+    selectElement.innerHTML = ''; // 清空下拉選單
+
+    options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        //這個值是會被提交進行處理
+        optionElement.textContent = option;
+        //這是給使用者看的
+        selectElement.appendChild(optionElement);
+    });
+}
+
+// 從 JSON 文件中獲取數據
+//fetch 函式是用於獲取資源的 Web API，常用於發送網路請求並從網路上取得資源。它返回一個 Promise 物件，該物件代表了當前的網路請求。
+fetch('data.json') //返回一Promise 當此被解析後會返回 Response 對象
+    .then(response => response.json())
+
+    .then(data => {
+        // 將返回的地點數據填充到地點下拉選單中
+        fillSelectOptions('locationName', data.location_data);
+
+        // 將返回的元素數據填充到元素下拉選單中
+        fillSelectOptions('elementName', data.element_data);
+
+        // 將返回的時間數據填充到時間下拉選單中
+        fillSelectOptions('time', data.time_data);
+    })
+    .catch(error => {
+        console.error('Error fetching data:', error);
+    });
+
+// 監聽搜索按鈕的點擊事件
+document.getElementById('search').addEventListener('click', function() {
+    var time = document.getElementById('time').value;
+    var elementName = document.getElementById('elementName').value;
+    var locationName = document.getElementById('locationName').value;
+
+    fetch(`https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=CWA-4725D58D-2826-4BA4-8C35-5CCA4127C072&time=${time}&elementName=${elementName}&locationName=${locationName}`)
+          //Authorization 把你的授權信息發給服務器已進行身分驗證 
+          //是從下拉選單中獲取的時間、元素和地點的值，它們被插入到 URL 中作為查詢參數，以便從 API 中獲取相應的天氣數據。 
+    .then(response => response.json())
+    //所以第一個then會解析json格式 返回promise 解析完成後會變成js對象
+    //從服務器接收到的 JSON 字符串解析為 JavaScript 對象
+        .then(data => {
+            //處理解析後的對象 從服務器獲取天氣數據
+            //該方法也返回一個新的Promise 以便可在後續進行調用
+            const weatherData = data;
+
+            // 顯示數據 
+            const records = weatherData.records;
+            //取得records物件
+            //records包含我們要的所有數據
+            const location = records.location[0];
+            //從物件中獲得location
+            const weatherElements = location.weatherElement;
+            //從location中獲取天氣元素
+            // 創建 HTML 字符串以顯示天氣預報
+            let weatherHTML = '<h2>天氣預報</h2>';
+            weatherElements.forEach(element => {
+                weatherHTML += `<p><strong>${element.elementName}:</strong> ${element.time[0].parameter.parameterName}</p>`;
+            });
+
+            // 更新結果區域的內容
+            document.getElementById('result').innerHTML = weatherHTML;
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+        });
+});
+</script>
+</body>
+</html>
